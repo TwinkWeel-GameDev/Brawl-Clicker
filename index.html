@@ -36,11 +36,11 @@
 
         /* Зона тапу */
         .game-area { 
-            height: 40vh; position: relative; display: flex; align-items: center; justify-content: center;
+            height: 35vh; position: relative; display: flex; align-items: center; justify-content: center;
             background: radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 70%);
         }
         #char { 
-            font-size: 140px; transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            font-size: 120px; transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); z-index: 5;
         }
         .combo-meter {
@@ -50,7 +50,7 @@
 
         /* UI Панель */
         .ui-panel { 
-            height: 60vh; background: var(--panel); border-top: 3px solid #333; 
+            height: 65vh; background: var(--panel); border-top: 3px solid #333; 
             border-radius: 30px 30px 0 0; display: flex; flex-direction: column;
             box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
         }
@@ -61,7 +61,16 @@
         }
         .nav-btn.active { color: #fff; background: var(--purple); box-shadow: 0 0 15px var(--purple); }
 
-        .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; padding-bottom: 80px; }
+        /* ВИПРАВЛЕНО: Додано padding-bottom щоб можна було пролистати до кінця */
+        .tab-content { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            display: none; 
+            padding-bottom: 150px; 
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
         .tab-content.active { display: block; }
 
         /* Картки магазину */
@@ -152,7 +161,7 @@
                 <div class="card-name">ГІПЕРЗАРЯД</div>
                 <button class="btn-buy" id="btn-hyper" onclick="buyHyper()" style="background: var(--purple);">100 💎</button>
             </div>
-            <div class="card" style="grid-column: span 2; border: 2px solid var(--purple);">
+            <div class="card" style="grid-column: span 2; border: 2px solid var(--purple); margin-top: 10px;">
                 <div class="card-icon">👑</div>
                 <div class="card-name">ПРАЙМ ПРЕСТИЖ (RESET)</div>
                 <button class="btn-buy" id="btn-prime" onclick="prestige()" style="background: var(--purple);">100K 🏆</button>
@@ -183,12 +192,24 @@
     </div>
 
     <div class="tab-content" id="tab-quests">
-        <div id="quest-list">
-            </div>
+        <div id="quest-list"></div>
     </div>
 </div>
 
 <script>
+    // ЗВУКИ (використовуємо стандартні короткі звуки)
+    const sfx = {
+        tap: new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'),
+        buy: new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'),
+        star: new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3'),
+        prime: new Audio('https://www.soundjay.com/nature/sounds/fanfare-01.mp3')
+    };
+
+    function playSfx(name) {
+        sfx[name].currentTime = 0;
+        sfx[name].play().catch(() => {}); // Ігноруємо помилки, якщо браузер блокує звук до першого кліку
+    }
+
     // Стан гри
     let state = {
         trophies: 0, gems: 0, prime: 0,
@@ -254,8 +275,8 @@
 
     // Логіка Тапу
     function handleTap(e) {
+        playSfx('tap');
         const now = Date.now();
-        // Комбо система
         if (now - state.lastTap < 300) {
             state.combo = Math.min(state.combo + 1, 50);
         } else {
@@ -271,7 +292,6 @@
         state.trophies += gain;
         state.totalClicks++;
 
-        // Візуал
         const char = document.getElementById('char');
         char.style.transform = 'scale(0.85) rotate(-5deg)';
         setTimeout(() => char.style.transform = 'scale(1) rotate(0deg)', 50);
@@ -281,7 +301,6 @@
         
         showFloatingText(x, y, "+" + f(gain), state.hyper ? 'var(--purple)' : 'white');
 
-        // Комбо UI
         const comboUI = document.getElementById('combo-ui');
         if (state.combo > 5) {
             comboUI.innerText = `COMBO x${comboMult}`;
@@ -290,7 +309,6 @@
             comboUI.style.opacity = 0;
         }
 
-        // Шанс на Гем (2%)
         if (Math.random() < 0.02) {
             state.gems += 1;
             showFloatingText(x, y - 40, "+1 💎", 'var(--green)');
@@ -310,7 +328,6 @@
         setTimeout(() => div.remove(), 700);
     }
 
-    // Події
     const tapArea = document.getElementById('tap-area');
     tapArea.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(e); }, {passive: false});
     tapArea.addEventListener('mousedown', (e) => { handleTap(e); });
@@ -318,6 +335,7 @@
     // Магазин та Апгрейди
     function upPwr() {
         if (state.trophies >= state.costs.pwr) {
+            playSfx('buy');
             state.trophies -= state.costs.pwr;
             state.power += 5;
             state.lvls.pwr++;
@@ -328,6 +346,7 @@
 
     function upAuto() {
         if (state.trophies >= state.costs.auto) {
+            playSfx('buy');
             state.trophies -= state.costs.auto;
             state.auto += 10;
             state.lvls.auto++;
@@ -338,6 +357,7 @@
 
     function upServer() {
         if (state.trophies >= state.costs.server) {
+            playSfx('buy');
             state.trophies -= state.costs.server;
             state.auto += 500;
             state.lvls.server++;
@@ -349,6 +369,7 @@
 
     function buyBox() {
         if (state.trophies >= 1500) {
+            playSfx('buy');
             state.trophies -= 1500;
             let g = Math.floor(Math.random() * 20) + 10;
             state.gems += g;
@@ -359,6 +380,7 @@
 
     function buyHyper() {
         if (state.gems >= 100 && !state.hyper) {
+            playSfx('buy');
             state.gems -= 100;
             state.hyper = true;
             document.getElementById('main-body').classList.add('hyper-active');
@@ -373,6 +395,7 @@
     }
 
     function nextSkin() {
+        playSfx('tap');
         state.skinIdx = (state.skinIdx + 1) % skins.length;
         update();
     }
@@ -380,6 +403,7 @@
     function prestige() {
         let req = 100000 * (state.prime + 1);
         if (state.trophies >= req) {
+            playSfx('prime');
             state.prime++;
             state.trophies = 0;
             state.power = 1;
@@ -391,15 +415,14 @@
         }
     }
 
-    // Таби
     function showTab(name) {
+        playSfx('tap');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('tab-' + name).classList.add('active');
-        event.target.classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
-    // Квести
     function renderQuests() {
         const list = document.getElementById('quest-list');
         const quests = [
@@ -416,7 +439,6 @@
         `).join('');
     }
 
-    // Стар Дроп
     function spawnStar() {
         if (Math.random() < 0.2) {
             const star = document.getElementById('stardrop');
@@ -429,6 +451,7 @@
 
     function catchDrop(e) {
         e.stopPropagation();
+        playSfx('star');
         document.getElementById('stardrop').style.display = "none";
         let bonus = state.power * 200;
         state.trophies += bonus;
@@ -436,7 +459,6 @@
         update();
     }
 
-    // Цикли
     setInterval(() => {
         if (state.auto > 0) {
             state.trophies += state.auto / 10;
@@ -445,7 +467,6 @@
     }, 100);
 
     setInterval(spawnStar, 10000);
-
     update();
 </script>
 </body>
