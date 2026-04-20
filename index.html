@@ -36,11 +36,11 @@
 
         /* Зона тапу */
         .game-area { 
-            height: 35vh; position: relative; display: flex; align-items: center; justify-content: center;
+            height: 40vh; position: relative; display: flex; align-items: center; justify-content: center;
             background: radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 70%);
         }
         #char { 
-            font-size: 120px; transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            font-size: 140px; transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); z-index: 5;
         }
         .combo-meter {
@@ -50,7 +50,7 @@
 
         /* UI Панель */
         .ui-panel { 
-            height: 65vh; background: var(--panel); border-top: 3px solid #333; 
+            height: 60vh; background: var(--panel); border-top: 3px solid #333; 
             border-radius: 30px 30px 0 0; display: flex; flex-direction: column;
             box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
         }
@@ -61,16 +61,7 @@
         }
         .nav-btn.active { color: #fff; background: var(--purple); box-shadow: 0 0 15px var(--purple); }
 
-        /* ВИПРАВЛЕНО: Додано padding-bottom щоб можна було пролистати до кінця */
-        .tab-content { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: none; 
-            padding-bottom: 150px; 
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-        }
+        .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; padding-bottom: 80px; }
         .tab-content.active { display: block; }
 
         /* Картки магазину */
@@ -161,7 +152,7 @@
                 <div class="card-name">ГІПЕРЗАРЯД</div>
                 <button class="btn-buy" id="btn-hyper" onclick="buyHyper()" style="background: var(--purple);">100 💎</button>
             </div>
-            <div class="card" style="grid-column: span 2; border: 2px solid var(--purple); margin-top: 10px;">
+            <div class="card" style="grid-column: span 2; border: 2px solid var(--purple);">
                 <div class="card-icon">👑</div>
                 <div class="card-name">ПРАЙМ ПРЕСТИЖ (RESET)</div>
                 <button class="btn-buy" id="btn-prime" onclick="prestige()" style="background: var(--purple);">100K 🏆</button>
@@ -192,22 +183,23 @@
     </div>
 
     <div class="tab-content" id="tab-quests">
-        <div id="quest-list"></div>
+        <div id="quest-list">
+            </div>
     </div>
 </div>
 
 <script>
-    // ЗВУКИ (використовуємо стандартні короткі звуки)
-    const sfx = {
-        tap: new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'),
+    // ДОДАНО: СИСТЕМА ЗВУКІВ
+    const audio = {
+        click: new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'),
         buy: new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'),
         star: new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3'),
-        prime: new Audio('https://www.soundjay.com/nature/sounds/fanfare-01.mp3')
+        prestige: new Audio('https://www.soundjay.com/human/sounds/applause-01.mp3')
     };
 
     function playSfx(name) {
-        sfx[name].currentTime = 0;
-        sfx[name].play().catch(() => {}); // Ігноруємо помилки, якщо браузер блокує звук до першого кліку
+        audio[name].currentTime = 0;
+        audio[name].play().catch(() => {}); // Ігноруємо помилки, якщо браузер блокує
     }
 
     // Стан гри
@@ -275,8 +267,9 @@
 
     // Логіка Тапу
     function handleTap(e) {
-        playSfx('tap');
         const now = Date.now();
+        playSfx('click'); // ПРОГРАВАЄМО ЗВУК
+
         if (now - state.lastTap < 300) {
             state.combo = Math.min(state.combo + 1, 50);
         } else {
@@ -332,7 +325,6 @@
     tapArea.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(e); }, {passive: false});
     tapArea.addEventListener('mousedown', (e) => { handleTap(e); });
 
-    // Магазин та Апгрейди
     function upPwr() {
         if (state.trophies >= state.costs.pwr) {
             playSfx('buy');
@@ -380,7 +372,7 @@
 
     function buyHyper() {
         if (state.gems >= 100 && !state.hyper) {
-            playSfx('buy');
+            playSfx('prestige');
             state.gems -= 100;
             state.hyper = true;
             document.getElementById('main-body').classList.add('hyper-active');
@@ -395,7 +387,7 @@
     }
 
     function nextSkin() {
-        playSfx('tap');
+        playSfx('click');
         state.skinIdx = (state.skinIdx + 1) % skins.length;
         update();
     }
@@ -403,7 +395,7 @@
     function prestige() {
         let req = 100000 * (state.prime + 1);
         if (state.trophies >= req) {
-            playSfx('prime');
+            playSfx('prestige');
             state.prime++;
             state.trophies = 0;
             state.power = 1;
@@ -416,11 +408,11 @@
     }
 
     function showTab(name) {
-        playSfx('tap');
+        playSfx('click');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('tab-' + name).classList.add('active');
-        event.currentTarget.classList.add('active');
+        event.target.classList.add('active');
     }
 
     function renderQuests() {
