@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brawl Clicker: ULTIMATE NULL'S</title>
+    <style>
+        :root {
+            --bg: #050508;
+            --panel: #12121a;
+            --red: #ff0044;
+            --purple: #8a2be2;
+            --gold: #ffcc00;
+            --cyan: #00ffff;
+            --green: #00ff66;
+        }
+
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Segoe UI', 'Arial Black', sans-serif; 
+            margin: 0; padding: 0; overflow: hidden; touch-action: none; user-select: none;
+        }
+
+        /* Анімації */
+        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(2px, -2px); } 75% { transform: translate(-2px, 2px); } }
+        @keyframes glow { 0% { box-shadow: 0 0 5px var(--purple); } 100% { box-shadow: 0 0 20px var(--purple); } }
+        .hyper-active { animation: shake 0.1s infinite; background: radial-gradient(circle, #300 0%, #050508 100%) !important; }
+
+        /* Шапка */
+        .header { 
+            display: flex; justify-content: space-around; background: linear-gradient(180deg, #1a0005 0%, var(--bg) 100%);
+            padding: 15px 5px; border-bottom: 3px solid var(--red); position: relative; z-index: 10;
+        }
+        .stat-box { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+        .stat-label { font-size: 10px; color: #aaa; text-transform: uppercase; }
+        .stat-val { font-size: 20px; font-weight: 900; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        /* Зона тапу */
+        .game-area { 
+            height: 40vh; position: relative; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 70%);
+        }
+        #char { 
+            font-size: 140px; transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); z-index: 5;
+        }
+        .combo-meter {
+            position: absolute; right: 20px; top: 20px; color: var(--cyan); font-style: italic;
+            font-size: 24px; font-weight: 900; opacity: 0; transition: 0.3s;
+        }
+
+        /* UI Панель */
+        .ui-panel { 
+            height: 60vh; background: var(--panel); border-top: 3px solid #333; 
+            border-radius: 30px 30px 0 0; display: flex; flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+        }
+        .nav-tabs { display: flex; background: #0a0a12; border-radius: 30px 30px 0 0; padding: 5px; }
+        .nav-btn { 
+            flex: 1; padding: 12px; cursor: pointer; color: #666; font-size: 11px; font-weight: 900;
+            text-align: center; transition: 0.3s; border-radius: 20px;
+        }
+        .nav-btn.active { color: #fff; background: var(--purple); box-shadow: 0 0 15px var(--purple); }
+
+        .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; padding-bottom: 80px; }
+        .tab-content.active { display: block; }
+
+        /* Картки магазину */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card { 
+            background: #1c1c2d; border-radius: 20px; padding: 15px; border: 1px solid #334;
+            display: flex; flex-direction: column; align-items: center; position: relative;
+        }
+        .card-lvl { position: absolute; top: 5px; right: 10px; font-size: 10px; color: var(--cyan); }
+        .card-icon { font-size: 30px; margin-bottom: 10px; }
+        .card-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #ddd; }
+        
+        button { 
+            width: 100%; border: none; padding: 10px; border-radius: 12px; font-weight: 900;
+            color: white; transition: 0.1s; cursor: pointer; font-size: 12px;
+        }
+        .btn-buy { background: linear-gradient(180deg, var(--red), #800); box-shadow: 0 4px #500; }
+        .btn-buy:active { transform: translateY(3px); box-shadow: none; }
+        .btn-buy:disabled { background: #333; box-shadow: none; opacity: 0.4; }
+
+        /* Спеціальні елементи */
+        .floating-text { 
+            position: absolute; pointer-events: none; animation: floatUp 0.7s forwards; 
+            font-weight: 900; font-size: 28px; z-index: 100;
+        }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-120px) scale(0.5); opacity: 0; } }
+
+        .quest-item { background: #0a0a12; margin-bottom: 10px; padding: 12px; border-radius: 15px; border-left: 5px solid var(--green); }
+        
+        #stardrop {
+            position: absolute; z-index: 50; width: 80px; height: 80px; display: none;
+            cursor: pointer; filter: drop-shadow(0 0 15px var(--gold));
+        }
+
+        #notify {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(138, 43, 226, 0.9); padding: 12px 25px; border-radius: 50px;
+            z-index: 200; font-weight: bold; display: none; border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body id="main-body">
+
+<div id="notify">Повідомлення!</div>
+
+<div class="header">
+    <div class="stat-box" style="color: var(--gold)">
+        <span class="stat-label">🏆 trophies</span>
+        <span id="trophies" class="stat-val">0</span>
+    </div>
+    <div class="stat-box" style="color: var(--green)">
+        <span class="stat-label">💎 gems</span>
+        <span id="gems" class="stat-val">0</span>
+    </div>
+    <div class="stat-box" style="color: var(--purple)">
+        <span class="stat-label">✨ prime</span>
+        <span id="prime" class="stat-val">0</span>
+    </div>
+</div>
+
+<div class="game-area" id="tap-area">
+    <div class="combo-meter" id="combo-ui">COMBO x2</div>
+    <div id="char">🧣</div>
+    <div id="stardrop" onclick="catchDrop(event)">⭐</div>
+</div>
+
+<div class="ui-panel">
+    <div class="nav-tabs">
+        <div class="nav-btn active" onclick="showTab('shop')">МАГАЗИН</div>
+        <div class="nav-btn" onclick="showTab('upgrades')">ПРОКАЧКА</div>
+        <div class="nav-btn" onclick="showTab('quests')">КВЕСТИ</div>
+    </div>
+
+    <div class="tab-content active" id="tab-shop">
+        <div class="grid">
+            <div class="card" style="grid-column: span 2; background: linear-gradient(45deg, #1a0000, #1c1c2d);">
+                <div class="card-icon">🎭</div>
+                <div class="card-name">НАСТУПНИЙ БІЄЦЬ</div>
+                <button class="btn-buy" onclick="nextSkin()">ЗМІНИТИ (БЕЗКОШТОВНО)</button>
+            </div>
+            <div class="card">
+                <div class="card-icon">📦</div>
+                <div class="card-name">МЕГА СКРИНЯ</div>
+                <button class="btn-buy" id="btn-box" onclick="buyBox()" style="background: var(--gold); color: #000;">1.5K 🏆</button>
+            </div>
+            <div class="card">
+                <div class="card-icon">⚡</div>
+                <div class="card-name">ГІПЕРЗАРЯД</div>
+                <button class="btn-buy" id="btn-hyper" onclick="buyHyper()" style="background: var(--purple);">100 💎</button>
+            </div>
+            <div class="card" style="grid-column: span 2; border: 2px solid var(--purple);">
+                <div class="card-icon">👑</div>
+                <div class="card-name">ПРАЙМ ПРЕСТИЖ (RESET)</div>
+                <button class="btn-buy" id="btn-prime" onclick="prestige()" style="background: var(--purple);">100K 🏆</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-upgrades">
+        <div class="grid">
+            <div class="card">
+                <span class="card-lvl" id="lvl-pwr">Lvl 1</span>
+                <div class="card-icon">🧨</div>
+                <div class="card-name">СИЛА КЛІКУ</div>
+                <button class="btn-buy" id="btn-pwr" onclick="upPwr()">+5 (<span id="cost-pwr">100</span>)</button>
+            </div>
+            <div class="card">
+                <span class="card-lvl" id="lvl-auto">Lvl 0</span>
+                <div class="card-icon">🤖</div>
+                <div class="card-name">АВТО-ФАРМ</div>
+                <button class="btn-buy" id="btn-auto" onclick="upAuto()">+10/с (<span id="cost-auto">500</span>)</button>
+            </div>
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-icon">🚀</div>
+                <div class="card-name">NULL'S СЕРВЕР (БУСТ)</div>
+                <button class="btn-buy" id="btn-server" onclick="upServer()">+500/с (<span id="cost-server">50K</span>)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-quests">
+        <div id="quest-list">
+            </div>
+    </div>
+</div>
+
+<script>
+    // Стан гри
+    let state = {
+        trophies: 0, gems: 0, prime: 0,
+        power: 1, auto: 0,
+        costs: { pwr: 100, auto: 500, server: 50000 },
+        lvls: { pwr: 1, auto: 0, server: 0 },
+        skinIdx: 0,
+        hyper: false,
+        combo: 0,
+        lastTap: 0,
+        totalClicks: 0
+    };
+
+    const skins = ["🧣", "🦅", "🌑", "🔥", "👑", "👺", "💀", "👽", "👾", "🤖", "🧨", "👊"];
+
+    // Завантаження даних
+    const saved = localStorage.getItem('brawlUltimatePro');
+    if (saved) state = JSON.parse(saved);
+
+    // Утиліти
+    function f(n) {
+        if (n >= 1000000) return (n/1000000).toFixed(2) + "M";
+        if (n >= 1000) return (n/1000).toFixed(1) + "K";
+        return Math.floor(n);
+    }
+
+    function notify(text) {
+        const el = document.getElementById('notify');
+        el.innerText = text;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 2000);
+    }
+
+    // Оновлення UI
+    function update() {
+        document.getElementById('trophies').innerText = f(state.trophies);
+        document.getElementById('gems').innerText = f(state.gems);
+        document.getElementById('prime').innerText = state.prime;
+
+        document.getElementById('lvl-pwr').innerText = "Lvl " + state.lvls.pwr;
+        document.getElementById('cost-pwr').innerText = f(state.costs.pwr);
+        document.getElementById('btn-pwr').disabled = state.trophies < state.costs.pwr;
+
+        document.getElementById('lvl-auto').innerText = "Lvl " + state.lvls.auto;
+        document.getElementById('cost-auto').innerText = f(state.costs.auto);
+        document.getElementById('btn-auto').disabled = state.trophies < state.costs.auto;
+
+        document.getElementById('cost-server').innerText = f(state.costs.server);
+        document.getElementById('btn-server').disabled = state.trophies < state.costs.server;
+
+        document.getElementById('btn-box').disabled = state.trophies < 1500;
+        document.getElementById('btn-hyper').disabled = state.gems < 100 || state.hyper;
+
+        let primeReq = 100000 * (state.prime + 1);
+        document.getElementById('btn-prime').innerText = `LEVEL UP (${f(primeReq)} 🏆)`;
+        document.getElementById('btn-prime').disabled = state.trophies < primeReq;
+
+        document.getElementById('char').innerText = skins[state.skinIdx];
+        
+        localStorage.setItem('brawlUltimatePro', JSON.stringify(state));
+        renderQuests();
+    }
+
+    // Логіка Тапу
+    function handleTap(e) {
+        const now = Date.now();
+        // Комбо система
+        if (now - state.lastTap < 300) {
+            state.combo = Math.min(state.combo + 1, 50);
+        } else {
+            state.combo = 0;
+        }
+        state.lastTap = now;
+
+        let comboMult = 1 + (Math.floor(state.combo / 10));
+        let hyperMult = state.hyper ? 10 : 1;
+        let primeBonus = state.prime * 50;
+
+        let gain = (state.power + primeBonus) * comboMult * hyperMult;
+        state.trophies += gain;
+        state.totalClicks++;
+
+        // Візуал
+        const char = document.getElementById('char');
+        char.style.transform = 'scale(0.85) rotate(-5deg)';
+        setTimeout(() => char.style.transform = 'scale(1) rotate(0deg)', 50);
+
+        const x = e.touches ? e.touches[0].pageX : e.pageX;
+        const y = e.touches ? e.touches[0].pageY : e.pageY;
+        
+        showFloatingText(x, y, "+" + f(gain), state.hyper ? 'var(--purple)' : 'white');
+
+        // Комбо UI
+        const comboUI = document.getElementById('combo-ui');
+        if (state.combo > 5) {
+            comboUI.innerText = `COMBO x${comboMult}`;
+            comboUI.style.opacity = 1;
+        } else {
+            comboUI.style.opacity = 0;
+        }
+
+        // Шанс на Гем (2%)
+        if (Math.random() < 0.02) {
+            state.gems += 1;
+            showFloatingText(x, y - 40, "+1 💎", 'var(--green)');
+        }
+
+        update();
+    }
+
+    function showFloatingText(x, y, text, color) {
+        const div = document.createElement('div');
+        div.className = 'floating-text';
+        div.innerText = text;
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+        div.style.color = color;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 700);
+    }
+
+    // Події
+    const tapArea = document.getElementById('tap-area');
+    tapArea.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(e); }, {passive: false});
+    tapArea.addEventListener('mousedown', (e) => { handleTap(e); });
+
+    // Магазин та Апгрейди
+    function upPwr() {
+        if (state.trophies >= state.costs.pwr) {
+            state.trophies -= state.costs.pwr;
+            state.power += 5;
+            state.lvls.pwr++;
+            state.costs.pwr = Math.round(state.costs.pwr * 1.7);
+            update();
+        }
+    }
+
+    function upAuto() {
+        if (state.trophies >= state.costs.auto) {
+            state.trophies -= state.costs.auto;
+            state.auto += 10;
+            state.lvls.auto++;
+            state.costs.auto = Math.round(state.costs.auto * 2.1);
+            update();
+        }
+    }
+
+    function upServer() {
+        if (state.trophies >= state.costs.server) {
+            state.trophies -= state.costs.server;
+            state.auto += 500;
+            state.lvls.server++;
+            state.costs.server = Math.round(state.costs.server * 3);
+            notify("NULL'S СЕРВЕР ПІДКЛЮЧЕНО! 🚀");
+            update();
+        }
+    }
+
+    function buyBox() {
+        if (state.trophies >= 1500) {
+            state.trophies -= 1500;
+            let g = Math.floor(Math.random() * 20) + 10;
+            state.gems += g;
+            notify(`МЕГА СКРИНЯ: +${g} 💎`);
+            update();
+        }
+    }
+
+    function buyHyper() {
+        if (state.gems >= 100 && !state.hyper) {
+            state.gems -= 100;
+            state.hyper = true;
+            document.getElementById('main-body').classList.add('hyper-active');
+            notify("ГІПЕРЗАРЯД! x10 СИЛИ!");
+            setTimeout(() => {
+                state.hyper = false;
+                document.getElementById('main-body').classList.remove('hyper-active');
+                update();
+            }, 15000);
+            update();
+        }
+    }
+
+    function nextSkin() {
+        state.skinIdx = (state.skinIdx + 1) % skins.length;
+        update();
+    }
+
+    function prestige() {
+        let req = 100000 * (state.prime + 1);
+        if (state.trophies >= req) {
+            state.prime++;
+            state.trophies = 0;
+            state.power = 1;
+            state.auto = 0;
+            state.costs = { pwr: 100, auto: 500, server: 50000 };
+            state.lvls = { pwr: 1, auto: 0, server: 0 };
+            notify(`✨ НОВИЙ ПРАЙМ РІВЕНЬ: ${state.prime}!`);
+            update();
+        }
+    }
+
+    // Таби
+    function showTab(name) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Квести
+    function renderQuests() {
+        const list = document.getElementById('quest-list');
+        const quests = [
+            { t: "Початківець", c: 100, v: state.totalClicks, r: "10 💎" },
+            { t: "Збирач кубків", c: 5000, v: state.trophies, r: "50 💎" },
+            { t: "Клікер-Монстр", c: 1000, v: state.totalClicks, r: "100 💎" }
+        ];
+        list.innerHTML = quests.map(q => `
+            <div class="quest-item" style="opacity: ${q.v >= q.c ? 1 : 0.5}">
+                <div style="font-weight:bold">${q.t}</div>
+                <div style="font-size:12px; color:#aaa">Прогрес: ${f(q.v)} / ${f(q.c)}</div>
+                <div style="font-size:12px; color:var(--green)">Нагорода: ${q.r}</div>
+            </div>
+        `).join('');
+    }
+
+    // Стар Дроп
+    function spawnStar() {
+        if (Math.random() < 0.2) {
+            const star = document.getElementById('stardrop');
+            star.style.left = Math.random() * 70 + 10 + "%";
+            star.style.top = Math.random() * 50 + 10 + "%";
+            star.style.display = "block";
+            setTimeout(() => star.style.display = "none", 4000);
+        }
+    }
+
+    function catchDrop(e) {
+        e.stopPropagation();
+        document.getElementById('stardrop').style.display = "none";
+        let bonus = state.power * 200;
+        state.trophies += bonus;
+        notify(`⭐ ЛЕГЕНДАРНИЙ ДРОП! +${f(bonus)} 🏆`);
+        update();
+    }
+
+    // Цикли
+    setInterval(() => {
+        if (state.auto > 0) {
+            state.trophies += state.auto / 10;
+            update();
+        }
+    }, 100);
+
+    setInterval(spawnStar, 10000);
+
+    update();
+</script>
+</body>
+</html>
